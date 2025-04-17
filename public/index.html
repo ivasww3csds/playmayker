@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Скоротити посилання (debug)</title>
+  <title>Скоротити посилання</title>
   <style>
     body {
       font-family: sans-serif;
@@ -55,22 +55,33 @@
   </div>
 
   <script>
-    document.getElementById('shortenForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
+    const form = document.getElementById('shortenForm');
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault(); // 🧷 предотвращаем перезагрузку
+
+      console.log('🔄 Форма відправлена');
+
       const formData = new URLSearchParams(new FormData(this));
+
       try {
         const response = await fetch('/shorten', {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
           body: formData
         });
+
         const text = await response.text();
-        console.log('Відповідь сервера:', response.status, text);
+        console.log('📡 Відповідь сервера:', response.status, text);
+
         document.getElementById('result').innerHTML = response.ok
-          ? \`<span style="color:#FFD057">Ваше посилання: <a href="\${text}" target="_blank" style="color:#FFD057">\${text}</a></span>\`
-          : \`<span style="color:red">\${text}</span>\`;
+          ? `<span style="color:#FFD057">Ваше посилання: <a href="${text}" target="_blank" style="color:#FFD057">${text}</a></span>`
+          : `<span style="color:red">❌ ${text}</span>`;
+
       } catch (error) {
-        console.error('💥 Помилка при відправці запиту:', error);
-        document.getElementById('result').innerHTML = '<span style="color:red">Помилка при відправці запиту</span>';
+        console.error('💥 Помилка при запиті:', error);
+        document.getElementById('result').innerHTML = '<span style="color:red">❌ Сталася помилка при з'єднанні з сервером</span>';
       }
     });
   </script>
