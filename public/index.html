@@ -102,34 +102,51 @@
     </div>
   </div>
   <script>
-    let currentCode = '';
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form');
+  const urlInput = document.querySelector('input[name="url"]');
+  const aliasInput = document.querySelector('input[name="alias"]');
+  const resultInput = document.getElementById('result');
+  const statsBtn = document.getElementById('stats-btn');
 
-    document.getElementById('shortenForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const formData = new URLSearchParams(new FormData(this));
-      const response = await fetch('/shorten', {
+  let lastCode = '';
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = urlInput.value.trim();
+    const alias = aliasInput.value.trim();
+
+    if (!url) {
+      alert('Введіть посилання');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://url-api.onrender.com/shorten', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData
+        body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(alias)}`
       });
 
-      const shortLink = await response.text();
-      if (shortLink && shortLink.startsWith('http')) {
-        currentCode = shortLink.split('/').pop();
-        const shortUrlEl = document.getElementById('shortUrl');
-        shortUrlEl.value = shortLink;
-        document.getElementById('shortUrlContainer').style.display = 'block';
-      } else {
-        alert("Помилка скорочення посилання. Спробуйте ще раз.");
-      }
-    });
+      const text = await response.text();
+      if (!response.ok) throw new Error(text);
 
-    document.getElementById('showStatsBtn').onclick = function() {
-      if (currentCode) {
-        const statsUrl = '/' + currentCode + '/stats';
-        window.open(statsUrl, '_blank');
-      }
+      resultInput.value = text;
+      lastCode = text.split('/').pop(); // сохраняем для кнопки статистики
+      statsBtn.style.display = 'block';
+    } catch (err) {
+      alert('Помилка скорочення посилання. Спробуйте ще раз.');
+      console.error(err);
     }
-  </script>
+  });
+
+  statsBtn.addEventListener('click', () => {
+    if (lastCode) {
+      window.open(`https://url-api.onrender.com/${lastCode}/stats`, '_blank');
+    }
+  });
+});
+</script>
+
 </body>
 </html>
