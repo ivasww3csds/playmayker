@@ -6,9 +6,9 @@
   <title>Скоротити посилання</title>
   <style>
     body {
+      font-family: sans-serif;
       background: #0f0f0f;
       color: white;
-      font-family: Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -21,7 +21,7 @@
       text-align: center;
       box-shadow: 0 0 10px rgba(255,255,255,0.1);
     }
-    input[type="url"] {
+    input {
       padding: 10px;
       width: 300px;
       border: none;
@@ -48,8 +48,8 @@
   <div class="container">
     <h1>Скоротіть посилання</h1>
     <form id="shortenForm">
-      <input type="url" name="url" placeholder="Вставте посилання тут" required>
-      <br>
+      <input type="url" name="url" placeholder="Вставте посилання тут" required><br>
+      <input type="text" name="custom" placeholder="Бажаний код (необов’язково)"><br>
       <button type="submit">Скоротити</button>
     </form>
     <div class="result" id="result"></div>
@@ -64,7 +64,9 @@
         body: formData
       });
       const text = await response.text();
-      document.getElementById('result').innerHTML = `Ваше посилання: <a href="${text}" style="color:#FFD057" target="_blank">${text}</a>`;
+      document.getElementById('result').innerHTML = response.ok
+        ? \`Ваше посилання: <a href="\${text}" target="_blank" style="color:#FFD057">\${text}</a>\`
+        : \`<span style="color:red">\${text}</span>\`;
     });
   </script>
 </body>
