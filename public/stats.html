@@ -69,35 +69,41 @@
   </table>
   <div class="error" id="error"></div>
 
-  <script>
-  const code = window.location.pathname.split('/')[1]; // "calc"
+ <script>
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
 
-  fetch(`/${code}/stats`, {
-    headers: {
-      'Accept': 'application/json'
-    }
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("Помилка завантаження статистики");
-    return res.json();
-  })
-  .then(data => {
-    const tbody = document.querySelector('#stats-table tbody');
-    data.details.forEach(stat => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${stat.ip}</td>
-        <td>${stat.country}</td>
-        <td>${stat.city}</td>
-        <td>${new Date(stat.date).toLocaleString()}</td>
-      `;
-      tbody.appendChild(row);
+  if (!code) {
+    document.getElementById('error').textContent = 'Не вказано параметр ?code=';
+  } else {
+    fetch(`/${code}/stats`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Не вдалося завантажити статистику");
+      return res.json();
+    })
+    .then(data => {
+      const tbody = document.querySelector('#stats-table tbody');
+      data.details.forEach(stat => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${stat.ip}</td>
+          <td>${stat.country}</td>
+          <td>${stat.city}</td>
+          <td>${new Date(stat.date).toLocaleString()}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    })
+    .catch(err => {
+      document.getElementById('error').textContent = err.message;
     });
-  })
-  .catch(err => {
-    document.getElementById('error').textContent = err.message;
-  });
+  }
 </script>
+
 
 </body>
 </html>
