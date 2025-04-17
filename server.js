@@ -34,7 +34,31 @@ app.post('/shorten', (req, res) => {
   const customCode = req.body.custom || crypto.randomBytes(3).toString('hex');
   db.run(`INSERT INTO urls (code, longUrl) VALUES (?, ?)`, [customCode, longUrl], function (err) {
     if (err) return res.status(500).send('Помилка при створенні');
-    res.send(`${req.protocol}://${req.get('host')}/${customCode}`);
+    const shortUrl = `${req.protocol}://${req.get('host')}/${customCode}`;
+    const statsUrl = `${shortUrl}/stats`;
+    res.send(`
+      <html lang="uk">
+        <head>
+          <meta charset="UTF-8">
+          <title>Скорочене посилання</title>
+          <style>
+            body { font-family: 'Segoe UI', sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
+            .box { background: #222; padding: 40px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.4); text-align: center; max-width: 500px; width: 100%; }
+            .box h2 { margin-bottom: 20px; }
+            .box a { color: #FFD057; text-decoration: none; font-weight: bold; display: block; margin-top: 10px; }
+            .button { background: #FFD057; color: #000; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="box">
+            <h2>Ваше скорочене посилання</h2>
+            <input type="text" value="${shortUrl}" style="width:100%; padding:10px; border-radius:5px; border:none; text-align:center;" readonly />
+            <a href="${statsUrl}" target="_blank" class="button">Переглянути статистику</a>
+            <a href="/">⬅ Повернутись назад</a>
+          </div>
+        </body>
+      </html>
+    `);
   });
 });
 
