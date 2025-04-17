@@ -1,52 +1,50 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Статистика переходів</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       background: #000;
       color: #fff;
       font-family: 'Segoe UI', sans-serif;
-      margin: 0;
+      text-align: center;
       padding: 40px 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
 
     h1 {
       color: #FFD057;
-      margin-bottom: 30px;
-      font-size: 28px;
+      margin-bottom: 20px;
     }
 
     table {
-      border-collapse: collapse;
       width: 100%;
       max-width: 900px;
-      background: #1a1a1a;
+      margin: auto;
+      border-collapse: collapse;
+      background: #1f1f1f;
       border-radius: 10px;
       overflow: hidden;
+      box-shadow: 0 0 10px rgba(255, 208, 87, 0.1);
     }
 
     th, td {
-      padding: 12px 16px;
-      text-align: left;
+      padding: 10px 15px;
       border-bottom: 1px solid #333;
+      text-align: left;
     }
 
     th {
-      background: #5a441f;
+      background: #6e4f1e;
       color: #FFD057;
     }
 
     tr:hover td {
-      background: #222;
+      background-color: #292929;
     }
 
-    .error {
+    #error {
       color: red;
       margin-top: 20px;
     }
@@ -63,47 +61,35 @@
         <th>Дата</th>
       </tr>
     </thead>
-    <tbody>
-      <!-- JS вставит сюда строки -->
-    </tbody>
+    <tbody></tbody>
   </table>
-  <div class="error" id="error"></div>
+  <div id="error"></div>
 
- <script>
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
+  <script>
+    const code = location.pathname.split('/')[1];
+    const endpoint = `/${code}/stats`;
 
-  if (!code) {
-    document.getElementById('error').textContent = 'Не вказано параметр ?code=';
-  } else {
-    fetch(`/${code}/stats`, {
-      headers: {
-        'Accept': 'application/json'
-      }
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Не вдалося завантажити статистику");
-      return res.json();
-    })
-    .then(data => {
-      const tbody = document.querySelector('#stats-table tbody');
-      data.details.forEach(stat => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${stat.ip}</td>
-          <td>${stat.country}</td>
-          <td>${stat.city}</td>
-          <td>${new Date(stat.date).toLocaleString()}</td>
-        `;
-        tbody.appendChild(row);
+    fetch(endpoint)
+      .then(res => {
+        if (!res.ok) throw new Error('Fetch error');
+        return res.json();
+      })
+      .then(data => {
+        const tbody = document.querySelector('#stats-table tbody');
+        data.details.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.ip}</td>
+            <td>${item.country}</td>
+            <td>${item.city}</td>
+            <td>${new Date(item.date).toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        document.getElementById('error').textContent = err.message;
       });
-    })
-    .catch(err => {
-      document.getElementById('error').textContent = err.message;
-    });
-  }
-</script>
-
-
+  </script>
 </body>
 </html>
