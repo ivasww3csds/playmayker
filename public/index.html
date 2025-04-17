@@ -67,50 +67,30 @@
   </div>
 
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('shortener-form');
-    const urlInput = document.querySelector('input[name="url"]');
-    const aliasInput = document.querySelector('input[name="alias"]');
-    const resultInput = document.getElementById('result');
-    const statsBtn = document.getElementById('stats-btn');
+  const form = document.getElementById('shortener-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = document.getElementById('url').value;
+    const alias = document.getElementById('custom').value;
 
-    let lastCode = '';
+    try {
+      const response = await fetch('https://url-api.onrender.com/shorten', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(alias)}`
+      });
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const url = urlInput.value.trim();
-      const alias = aliasInput.value.trim();
-
-      if (!url) {
-        alert('Введіть посилання');
-        return;
+      const shortUrl = await response.text();
+      if (response.ok) {
+        document.getElementById('result').value = shortUrl;
+      } else {
+        alert(`Помилка: ${shortUrl}`);
       }
-
-      try {
-        const response = await fetch('https://url-api.onrender.com/shorten', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(alias)}`
-        });
-
-        const text = await response.text();
-        if (!response.ok) throw new Error(text);
-
-        resultInput.value = text;
-        lastCode = text.split('/').pop();
-        statsBtn.style.display = 'block';
-      } catch (err) {
-        alert('Помилка скорочення посилання. Спробуйте ще раз.');
-        console.error(err);
-      }
-    });
-
-    statsBtn.addEventListener('click', () => {
-      if (lastCode) {
-        window.open(`https://url-api.onrender.com/${lastCode}/stats`, '_blank');
-      }
-    });
+    } catch (error) {
+      alert('Помилка з’єднання із сервером');
+    }
   });
-  </script>
+</script>
+
 </body>
 </html>
