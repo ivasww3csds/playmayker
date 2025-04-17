@@ -1,112 +1,111 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Скоротити посилання</title>
   <style>
     body {
       margin: 0;
+      background-color: #0d0d0d;
       font-family: 'Segoe UI', sans-serif;
-      background: radial-gradient(circle at top left, #1f1f1f, #000);
-      color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      color: white;
     }
+
     .container {
       background: #1c1c1c;
       padding: 40px;
       border-radius: 16px;
       box-shadow: 0 0 20px rgba(255, 208, 87, 0.2);
-      max-width: 460px;
       width: 100%;
-    }
-    h1 {
+      max-width: 500px;
       text-align: center;
+    }
+
+    h1 {
       color: #FFD057;
       margin-bottom: 30px;
     }
-    input[type="text"] {
+
+    input, button {
       width: 100%;
-      padding: 12px 14px;
-      margin: 10px 0;
-      background: #2a2a2a;
-      color: #fff;
-      border: 1px solid #444;
-      border-radius: 8px;
-      transition: 0.3s;
-    }
-    input[type="text"]:focus {
-      outline: none;
-      border-color: #FFD057;
-      box-shadow: 0 0 5px #FFD057;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      background: #FFD057;
-      color: #000;
-      font-weight: bold;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 16px;
       border: none;
       border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    input {
+      background-color: #333;
+      color: #fff;
+    }
+
+    button {
+      background-color: #FFD057;
+      color: #000;
+      font-weight: bold;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: 0.3s;
     }
+
     button:hover {
-      background: #e6bb45;
+      background-color: #e0b84a;
     }
-    #short-url {
-      margin-top: 20px;
-      background: #2a2a2a;
-      color: #aaa;
-      text-align: center;
-      font-size: 0.95em;
+
+    #result {
+      background-color: #fff;
+      color: #000;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      word-break: break-word;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Скоротіть посилання</h1>
-    <form id="shortener-form">
-      <input type="text" id="url" placeholder="Вставте ваше посилання" required>
-      <input type="text" id="custom" placeholder="Бажаний код (необов’язково)">
-      <button type="submit">Скоротити</button>
-    </form>
-    <input type="text" id="short-url" placeholder="Тут з'явиться коротке посилання" readonly>
-    <button id="view-stats" style="display: none; margin-top: 10px; background: #444; color: #fff;">Переглянути статистику</button>
+    <input type="text" id="url" placeholder="https://example.com" />
+    <input type="text" id="custom" placeholder="Бажаний код (необов'язково)" />
+    <button onclick="shorten()">Скоротити</button>
+    <div id="result">Тут з'явиться коротке посилання</div>
   </div>
 
   <script>
-    let lastCode = '';
-    document.getElementById('shortener-form').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      const url = document.getElementById('url').value;
-      const custom = document.getElementById('custom').value;
-      const response = await fetch('/shorten', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(custom)}`
-      });
+    async function shorten() {
+      const url = document.getElementById('url').value.trim();
+      const custom = document.getElementById('custom').value.trim();
+      const result = document.getElementById('result');
 
-      if (response.ok) {
-        const shortUrl = await response.text();
-        document.getElementById('short-url').value = shortUrl;
-        lastCode = shortUrl.split('/').pop();
-        document.getElementById('view-stats').style.display = 'block';
-      } else {
-        const errorText = await response.text();
-        alert('Помилка: ' + errorText);
+      if (!url) {
+        alert('Введіть URL!');
+        return;
       }
-    });
 
-    document.getElementById('view-stats').addEventListener('click', function () {
-      if (lastCode) {
-        window.open(`/stats.html?code=${lastCode}`, '_blank');
+      try {
+        const res = await fetch('/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(custom)}`
+        });
+
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(msg || 'Помилка запиту');
+        }
+
+        const data = await res.json();
+        result.innerHTML = `<a href="${data.short}" target="_blank">${data.short}</a>`;
+      } catch (err) {
+        alert('Помилка: ' + err.message);
       }
-    });
+    }
   </script>
 </body>
 </html>
