@@ -20,7 +20,8 @@ app.get('/:code', (req, res) => {
   if (!entry) return res.status(404).send('Not found');
   entry.clicks++;
 
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '')
+  .split(',')[0].trim();
   const geo = geoip.lookup(ip) || {};
   entry.logs.push({
     ip,
