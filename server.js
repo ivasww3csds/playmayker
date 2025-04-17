@@ -27,45 +27,87 @@ db.run(`CREATE TABLE IF NOT EXISTS clicks_log (
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+app.get('/', (req, res) => {
+  res.send(`
+    <html lang="uk">
+    <head>
+      <meta charset="UTF-8">
+      <title>Скоротіть посилання</title>
+      <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .box { background: #222; padding: 40px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.4); text-align: center; width: 600px; }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        button { background: #FFD057; color: #000; font-weight: bold; cursor: pointer; }
+        #shortUrl, #statsTable { display: none; margin-top: 20px; }
+        table { width: 100%; margin-top: 10px; background: #fff; color: #000; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 10px; }
+        th { background: #f2f2f2; }
+      </style>
+    </head>
+    <body>
+      <div class="box">
+        <h2>Скоротіть посилання</h2>
+        <form id="shortenForm">
+          <input type="url" name="url" placeholder="https://example.com" required>
+          <input type="text" name="custom" placeholder="Бажаний код (необов’язково)">
+          <button type="submit">Скоротити</button>
+        </form>
+        <div id="shortUrl"></div>
+        <button id="showStatsBtn" style="display:none">Переглянути статистику</button>
+        <div id="statsTable"></div>
+      </div>
+      <script>
+        document.getElementById('shortenForm').addEventListener('submit', async function(e) {
+          e.preventDefault();
+          const formData = new URLSearchParams(new FormData(this));
+          const response = await fetch('/shorten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+          });
+          const html = await response.text();
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = html;
+          const input = tempDiv.querySelector('input');
+          const shortLink = input?.value || '';
+          document.getElementById('shortUrl').innerHTML = '<input value="' + shortLink + '" readonly onclick="this.select(); document.execCommand(\'copy\');">';
+          document.getElementById('shortUrl').style.display = 'block';
+          document.getElementById('showStatsBtn').style.display = 'block';
+
+          document.getElementById('showStatsBtn').onclick = async function() {
+            const code = shortLink.split('/').pop();
+            const response = await fetch('/stats/' + code);
+            const html = await response.text();
+            document.getElementById('statsTable').innerHTML = html;
+            document.getElementById('statsTable').style.display = 'block';
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 app.post('/shorten', (req, res) => {
   const longUrl = req.body.url;
   const customCode = req.body.custom || crypto.randomBytes(3).toString('hex');
   db.run(`INSERT INTO urls (code, longUrl) VALUES (?, ?)`, [customCode, longUrl], function (err) {
     if (err) return res.status(500).send('Помилка при створенні');
     const shortUrl = `${req.protocol}://${req.get('host')}/${customCode}`;
-    db.all(`SELECT ip, country, city, timestamp FROM clicks_log WHERE code = ? ORDER BY timestamp DESC`, [customCode], (err, rows) => {
-      res.send(`
-        <html lang="uk">
-          <head>
-            <meta charset="UTF-8">
-            <title>Скорочене посилання</title>
-            <style>
-              body { font-family: 'Segoe UI', sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: flex-start; padding-top: 50px; height: 100vh; flex-direction: column; align-items: center; }
-              .box { background: #222; padding: 40px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.4); text-align: center; max-width: 600px; width: 100%; }
-              .box h2 { margin-bottom: 20px; }
-              .box input { width: 100%; padding: 10px; border-radius: 5px; border: none; text-align: center; margin-bottom: 10px; }
-              .button { background: #FFD057; color: #000; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; display: block; width: fit-content; margin: 10px auto; }
-              table { margin-top: 20px; background: #fff; color: #000; border-collapse: collapse; width: 100%; max-width: 800px; border-radius: 5px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
-              th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-              th { background-color: #f7f7f7; font-weight: bold; }
-              tr:nth-child(even) { background-color: #f9f9f9; }
-            </style>
-          </head>
-          <body>
-            <div class="box">
-              <h2>Ваше скорочене посилання</h2>
-              <input type="text" value="${shortUrl}" readonly onclick="this.select(); document.execCommand('copy');" />
-              <h3>Статистика переходів</h3>
-              <table>
-                <tr><th>IP</th><th>Країна</th><th>Місто</th><th>Час</th></tr>
-                ${rows.map(r => `<tr><td>${r.ip}</td><td>${r.country}</td><td>${r.city}</td><td>${new Date(r.timestamp).toLocaleString()}</td></tr>`).join('')}
-              </table>
-              <a href="/" class="button">⬅ Повернутись назад</a>
-            </div>
-          </body>
-        </html>
-      `);
-    });
+    res.send(`<input type="text" value="${shortUrl}" readonly onclick="this.select(); document.execCommand('copy');" />`);
+  });
+});
+
+app.get('/stats/:code', (req, res) => {
+  const code = req.params.code;
+  db.all(`SELECT ip, country, city, timestamp FROM clicks_log WHERE code = ? ORDER BY timestamp DESC`, [code], (err, rows) => {
+    const rowsHtml = rows.map(r => `<tr><td>${r.ip}</td><td>${r.country}</td><td>${r.city}</td><td>${new Date(r.timestamp).toLocaleString()}</td></tr>`).join('');
+    res.send(`
+      <table>
+        <tr><th>IP</th><th>Країна</th><th>Місто</th><th>Час</th></tr>
+        ${rowsHtml}
+      </table>
+    `);
   });
 });
 
