@@ -1,8 +1,9 @@
+// server.js
 const express = require('express');
 const path = require('path');
-const app = express();
 const geoip = require('geoip-lite');
 const bodyParser = require('body-parser');
+const app = express();
 const db = new Map();
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -11,9 +12,8 @@ app.use(express.static('public'));
 app.post('/shorten', (req, res) => {
   const { url, custom } = req.body;
   const code = custom || Math.random().toString(36).substring(2, 8);
-
   db.set(code, { url, clicks: 0, logs: [] });
-  res.json({ short: `/${code}` }); // <-- Важно: поле называется short
+  res.json({ short: code });
 });
 
 app.get('/:code', (req, res) => {
@@ -23,12 +23,11 @@ app.get('/:code', (req, res) => {
   entry.clicks++;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   const geo = geoip.lookup(ip) || {};
-
   entry.logs.push({
     ip,
     country: geo.country || 'N/A',
     city: geo.city || 'N/A',
-    date: new Date()
+    date: new Date(),
   });
 
   res.redirect(entry.url);
@@ -42,7 +41,6 @@ app.get('/:code/stats', (req, res) => {
   const code = req.params.code;
   const stats = db.get(code);
   if (!stats) return res.status(404).json({ error: 'Not found' });
-
   res.json({ details: stats.logs });
 });
 
