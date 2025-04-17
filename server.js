@@ -1,120 +1,64 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
 const bodyParser = require('body-parser');
+const sqlite3 = require('sqlite3').verbose();
 const crypto = require('crypto');
-const geoip = require('geoip-lite');
-const XLSX = require('xlsx');
+const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-const db = new sqlite3.Database('./database.db');
-db.run(`CREATE TABLE IF NOT EXISTS urls (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  code TEXT UNIQUE,
-  longUrl TEXT,
-  clicks INTEGER DEFAULT 0,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-)`);
-db.run(`CREATE TABLE IF NOT EXISTS clicks_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  code TEXT,
-  ip TEXT,
-  country TEXT,
-  city TEXT,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-)`);
+const db = new sqlite3.Database('./shortener.db');
 
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
+// Створити таблицю, якщо не існує
+db.run(`CREATE TABLE IF NOT EXISTS links (
+  code TEXT PRIMARY KEY,
+  url TEXT,
+  clicks INTEGER DEFAULT 0
+)`);
+
+// Віддати index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Створити коротке посилання
 app.post('/shorten', (req, res) => {
-  const longUrl = req.body.url;
-  const customCode = req.body.custom || crypto.randomBytes(3).toString('hex');
-  db.run(`INSERT INTO urls (code, longUrl) VALUES (?, ?)`, [customCode, longUrl], function (err) {
-    if (err) return res.status(500).send('Помилка при створенні');
-    res.send(`${req.protocol}://${req.get('host')}/${customCode}`);
+  const { url, custom } = req.body;
+  const code = custom || crypto.randomBytes(3).toString('hex');
+
+  db.get('SELECT code FROM links WHERE code = ?', [code], (err, row) => {
+    if (err) return res.status(500).send('Помилка сервера');
+    if (row) return res.status(400).send('Цей код уже зайнятий');
+
+    db.run('INSERT INTO links (code, url) VALUES (?, ?)', [code, url], (err) => {
+      if (err) return res.status(500).send('Помилка запису в базу');
+      const shortUrl = `${req.protocol}://${req.get('host')}/${code}`;
+      res.send(shortUrl);
+    });
   });
 });
 
+// Перенаправлення
 app.get('/:code', (req, res) => {
   const code = req.params.code;
-  db.get(`SELECT * FROM urls WHERE code = ?`, [code], (err, row) => {
-    if (row) {
-      db.run(`UPDATE urls SET clicks = clicks + 1 WHERE code = ?`, [code]);
-      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-      const geo = geoip.lookup(ip.split(',')[0].trim()) || {};
-      db.run(
-        `INSERT INTO clicks_log (code, ip, country, city) VALUES (?, ?, ?, ?)`,
-        [code, ip, geo.country || '-', geo.city || '-']
-      );
-      res.redirect(row.longUrl);
-    } else {
-      res.status(404).send('Скорочене посилання не знайдено');
-    }
+  db.get('SELECT url FROM links WHERE code = ?', [code], (err, row) => {
+    if (err || !row) return res.status(404).send('Посилання не знайдено');
+    db.run('UPDATE links SET clicks = clicks + 1 WHERE code = ?', [code]);
+    res.redirect(row.url);
   });
 });
 
+// Статистика
 app.get('/:code/stats', (req, res) => {
   const code = req.params.code;
-  db.all(`SELECT ip, country, city, timestamp FROM clicks_log WHERE code = ? ORDER BY timestamp DESC`, [code], (err, rows) => {
-    if (err) return res.status(500).send('Помилка при завантаженні статистики');
-    const html = `
-      <html lang="uk">
-        <head>
-          <meta charset="UTF-8">
-          <title>Статистика</title>
-          <style>
-            body {
-              font-family: 'Segoe UI', sans-serif;
-              background: #f4f4f4;
-              padding: 20px;
-            }
-            h2 {
-              display: flex;
-              align-items: center;
-              font-size: 24px;
-              margin-bottom: 10px;
-            }
-            h2 img {
-              width: 24px;
-              margin-right: 10px;
-            }
-            table {
-              border-collapse: collapse;
-              width: 100%;
-              background: #fff;
-              border-radius: 5px;
-              box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-              overflow: hidden;
-            }
-            th, td {
-              border: 1px solid #ddd;
-              padding: 10px;
-              text-align: center;
-            }
-            th {
-              background-color: #f7f7f7;
-              font-weight: bold;
-            }
-            tr:nth-child(even) {
-              background-color: #f9f9f9;
-            }
-          </style>
-        </head>
-        <body>
-          <h2><img src="https://img.icons8.com/color/48/statistics.png"/>Статистика для <code>${code}</code></h2>
-          <table>
-            <tr><th>IP</th><th>Країна</th><th>Місто</th><th>Час</th></tr>
-            ${rows.map(r => `<tr><td>${r.ip}</td><td>${r.country}</td><td>${r.city}</td><td>${new Date(r.timestamp).toLocaleString()}</td></tr>`).join('')}
-          </table>
-        </body>
-      </html>`;
-    res.send(html);
+  db.get('SELECT code, url, clicks FROM links WHERE code = ?', [code], (err, row) => {
+    if (err || !row) return res.status(404).send('Посилання не знайдено');
+    res.json(row);
   });
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Сайт працює на http://localhost:${PORT}`);
+  console.log(`Сервер працює на порті ${PORT}`);
 });
