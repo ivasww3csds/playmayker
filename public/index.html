@@ -101,7 +101,7 @@
         }
 
         const data = await res.json();
-        result.innerHTML = `<a href="${data.short}" target="_blank">${data.short}</a>`;
+        result.innerHTML = `<a href="${data.shortUrl}" target="_blank">${data.shortUrl}</a>`;
       } catch (err) {
         alert('Помилка: ' + err.message);
       }
