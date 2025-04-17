@@ -1,50 +1,54 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <title>Скоротіть посилання</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            background: #111;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background: #1c1c1c;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.4);
-            width: 100%;
-            max-width: 400px;
-        }
-        h1 {
-            text-align: center;
-        }
-        input, button {
-            width: 100%;
-            margin: 10px 0;
-            padding: 12px;
-            border-radius: 6px;
-            border: none;
-        }
-        button {
-            background: #FFD057;
-            font-weight: bold;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Скоротіть посилання</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: #1e1e1e;
+      padding: 30px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 6px;
+    }
+    button {
+      background: #FFD057;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .info {
+      font-size: 14px;
+      margin-top: 20px;
+      color: #bbb;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Скоротіть посилання</h1>
-        <form method="POST" action="/shorten">
-            <input type="url" name="url" placeholder="Вставте посилання тут" required>
-            <input type="text" name="custom" placeholder="Бажаний код (необов’язково)">
-            <button type="submit">Скоротити</button>
-        </form>
-    </div>
+  <div class="container">
+    <h1>Скоротіть посилання</h1>
+    <form method="POST" action="/shorten">
+      <input type="url" name="url" placeholder="Вставте посилання тут" required />
+      <input type="text" name="custom" placeholder="Бажаний код (необов’язково)" />
+      <button type="submit">Скоротити</button>
+    </form>
+    <div class="info">Після скорочення — додайте <code>/stats</code> для перегляду статистики.</div>
+  </div>
 </body>
 </html>
