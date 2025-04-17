@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Скоротити посилання</title>
+  <style>
+    body {
+      background: #0f0f0f;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: rgba(255,255,255,0.05);
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+    input[type="url"] {
+      padding: 10px;
+      width: 300px;
+      border: none;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #FFD057;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .result {
+      margin-top: 15px;
+      font-size: 18px;
+      color: #FFD057;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Скоротіть посилання</h1>
+    <form id="shortenForm">
+      <input type="url" name="url" placeholder="Вставте посилання тут" required>
+      <br>
+      <button type="submit">Скоротити</button>
+    </form>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    document.getElementById('shortenForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new URLSearchParams(new FormData(this));
+      const response = await fetch('/shorten', {
+        method: 'POST',
+        body: formData
+      });
+      const text = await response.text();
+      document.getElementById('result').innerHTML = `Ваше посилання: <a href="${text}" style="color:#FFD057" target="_blank">${text}</a>`;
+    });
+  </script>
+</body>
+</html>
