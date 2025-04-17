@@ -38,10 +38,11 @@ app.get('/', (req, res) => {
         .box { background: #222; padding: 40px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.4); text-align: center; width: 600px; }
         input, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
         button { background: #FFD057; color: #000; font-weight: bold; cursor: pointer; }
-        #shortUrl, #statsTable { display: none; margin-top: 20px; }
+        #shortUrlContainer, #statsTable { display: none; margin-top: 20px; }
         table { width: 100%; margin-top: 10px; background: #fff; color: #000; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 10px; }
         th { background: #f2f2f2; }
+        #shortUrl { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
       </style>
     </head>
     <body>
@@ -52,11 +53,15 @@ app.get('/', (req, res) => {
           <input type="text" name="custom" placeholder="Бажаний код (необов’язково)">
           <button type="submit">Скоротити</button>
         </form>
-        <div id="shortUrl"></div>
-        <button id="showStatsBtn" style="display:none">Переглянути статистику</button>
+        <div id="shortUrlContainer">
+          <input id="shortUrl" readonly onclick="this.select(); document.execCommand('copy');">
+          <button id="showStatsBtn">Переглянути статистику</button>
+        </div>
         <div id="statsTable"></div>
       </div>
       <script>
+        let currentCode = '';
+
         document.getElementById('shortenForm').addEventListener('submit', async function(e) {
           e.preventDefault();
           const formData = new URLSearchParams(new FormData(this));
@@ -70,18 +75,18 @@ app.get('/', (req, res) => {
           tempDiv.innerHTML = html;
           const input = tempDiv.querySelector('input');
           const shortLink = input?.value || '';
-          document.getElementById('shortUrl').innerHTML = '<input value="' + shortLink + '" readonly onclick="this.select(); document.execCommand(\'copy\');">';
-          document.getElementById('shortUrl').style.display = 'block';
-          document.getElementById('showStatsBtn').style.display = 'block';
-
-          document.getElementById('showStatsBtn').onclick = async function() {
-            const code = shortLink.split('/').pop();
-            const response = await fetch('/stats/' + code);
-            const html = await response.text();
-            document.getElementById('statsTable').innerHTML = html;
-            document.getElementById('statsTable').style.display = 'block';
-          }
+          currentCode = shortLink.split('/').pop();
+          document.getElementById('shortUrl').value = shortLink;
+          document.getElementById('shortUrlContainer').style.display = 'block';
+          document.getElementById('statsTable').style.display = 'none';
         });
+
+        document.getElementById('showStatsBtn').onclick = async function() {
+          const response = await fetch('/stats/' + currentCode);
+          const html = await response.text();
+          document.getElementById('statsTable').innerHTML = html;
+          document.getElementById('statsTable').style.display = 'block';
+        }
       </script>
     </body>
     </html>
