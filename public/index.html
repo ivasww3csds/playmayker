@@ -57,12 +57,10 @@
   <script>
     const form = document.getElementById('shortenForm');
     form.addEventListener('submit', async function(e) {
-      e.preventDefault(); // 🧷 предотвращаем перезагрузку
-
+      e.preventDefault();
       console.log('🔄 Форма відправлена');
 
       const formData = new URLSearchParams(new FormData(this));
-
       try {
         const response = await fetch('/shorten', {
           method: 'POST',
@@ -78,7 +76,6 @@
         document.getElementById('result').innerHTML = response.ok
           ? `<span style="color:#FFD057">Ваше посилання: <a href="${text}" target="_blank" style="color:#FFD057">${text}</a></span>`
           : `<span style="color:red">❌ ${text}</span>`;
-
       } catch (error) {
         console.error('💥 Помилка при запиті:', error);
         document.getElementById('result').innerHTML = '<span style="color:red">❌ Сталася помилка при з'єднанні з сервером</span>';
