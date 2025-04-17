@@ -1,116 +1,64 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-  <meta charset="UTF-8">
-  <title>Скоротіть посилання</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      background-color: #111;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: #222;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(255, 208, 87, 0.2);
-      width: 100%;
-      max-width: 500px;
-      text-align: center;
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 6px;
-      border: none;
-      font-size: 16px;
-    }
-    input {
-      background-color: #333;
-      color: #fff;
-    }
-    button {
-      background-color: #FFD057;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    #stats-btn {
-      display: none;
-      background-color: #444;
-      color: #fff;
-    }
-    #result {
-      background-color: #fff;
-      color: #000;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>Скоротіть посилання</h2>
-    <form id="shortener-form">
-      <input type="url" name="url" placeholder="Вставте ваше посилання" required />
-      <input type="text" name="alias" placeholder="Бажаний код (необов’язково)" />
-      <button type="submit">Скоротити</button>
-    </form>
-    <input id="result" readonly placeholder="Тут з'явиться коротке посилання" />
-    <button id="stats-btn">Переглянути статистику</button>
-  </div>
+const express = require('express');
+const bodyParser = require('body-parser');
+const sqlite3 = require('sqlite3').verbose();
+const crypto = require('crypto');
+const path = require('path');
 
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('shortener-form');
-    const urlInput = document.querySelector('input[name="url"]');
-    const aliasInput = document.querySelector('input[name="alias"]');
-    const resultInput = document.getElementById('result');
-    const statsBtn = document.getElementById('stats-btn');
+const app = express();
+const db = new sqlite3.Database('./shortener.db');
 
-    let lastCode = '';
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const url = urlInput.value.trim();
-      const alias = aliasInput.value.trim();
+// Створити таблицю, якщо не існує
+db.run(`CREATE TABLE IF NOT EXISTS links (
+  code TEXT PRIMARY KEY,
+  url TEXT,
+  clicks INTEGER DEFAULT 0
+)`);
 
-      if (!url) {
-        alert('Введіть посилання');
-        return;
-      }
+// Віддати index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-      try {
-        const response = await fetch('https://url-api.onrender.com/shorten', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(alias)}`
-        });
+// Створити коротке посилання
+app.post('/shorten', (req, res) => {
+  const { url, custom } = req.body;
+  const code = custom || crypto.randomBytes(3).toString('hex');
 
-        const text = await response.text();
-        if (!response.ok) throw new Error(text);
+  db.get('SELECT code FROM links WHERE code = ?', [code], (err, row) => {
+    if (err) return res.status(500).send('Помилка сервера');
+    if (row) return res.status(400).send('Цей код уже зайнятий');
 
-        resultInput.value = text;
-        lastCode = text.split('/').pop();
-        statsBtn.style.display = 'block';
-      } catch (err) {
-        alert('Помилка скорочення посилання. Спробуйте ще раз.');
-        console.error(err);
-      }
-    });
-
-    statsBtn.addEventListener('click', () => {
-      if (lastCode) {
-        window.open(`https://url-api.onrender.com/${lastCode}/stats`, '_blank');
-      }
+    db.run('INSERT INTO links (code, url) VALUES (?, ?)', [code, url], (err) => {
+      if (err) return res.status(500).send('Помилка запису в базу');
+      const shortUrl = `${req.protocol}://${req.get('host')}/${code}`;
+      res.send(shortUrl);
     });
   });
-  </script>
-</body>
-</html>
+});
+
+// Перенаправлення
+app.get('/:code', (req, res) => {
+  const code = req.params.code;
+  db.get('SELECT url FROM links WHERE code = ?', [code], (err, row) => {
+    if (err || !row) return res.status(404).send('Посилання не знайдено');
+    db.run('UPDATE links SET clicks = clicks + 1 WHERE code = ?', [code]);
+    res.redirect(row.url);
+  });
+});
+
+// Статистика
+app.get('/:code/stats', (req, res) => {
+  const code = req.params.code;
+  db.get('SELECT code, url, clicks FROM links WHERE code = ?', [code], (err, row) => {
+    if (err || !row) return res.status(404).send('Посилання не знайдено');
+    res.json(row);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Сервер працює на порті ${PORT}`);
+});
