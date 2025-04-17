@@ -1,91 +1,116 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const geoip = require('geoip-lite');
-const sqlite3 = require('sqlite3').verbose();
-const bodyParser = require('body-parser');
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Скоротіть посилання</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #222;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(255, 208, 87, 0.2);
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+    }
+    input {
+      background-color: #333;
+      color: #fff;
+    }
+    button {
+      background-color: #FFD057;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #stats-btn {
+      display: none;
+      background-color: #444;
+      color: #fff;
+    }
+    #result {
+      background-color: #fff;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Скоротіть посилання</h2>
+    <form id="shortener-form">
+      <input type="url" name="url" placeholder="Вставте ваше посилання" required />
+      <input type="text" name="alias" placeholder="Бажаний код (необов’язково)" />
+      <button type="submit">Скоротити</button>
+    </form>
+    <input id="result" readonly placeholder="Тут з'явиться коротке посилання" />
+    <button id="stats-btn">Переглянути статистику</button>
+  </div>
 
-const app = express();
-const db = new sqlite3.Database('shortener.db');
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('shortener-form');
+    const urlInput = document.querySelector('input[name="url"]');
+    const aliasInput = document.querySelector('input[name="alias"]');
+    const resultInput = document.getElementById('result');
+    const statsBtn = document.getElementById('stats-btn');
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
+    let lastCode = '';
 
-// Создание таблиц
-db.run(`CREATE TABLE IF NOT EXISTS urls (
-  code TEXT PRIMARY KEY,
-  url TEXT
-)`);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      const alias = aliasInput.value.trim();
 
-db.run(`CREATE TABLE IF NOT EXISTS clicks_log (
-  code TEXT,
-  ip TEXT,
-  country TEXT,
-  city TEXT,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-)`);
+      if (!url) {
+        alert('Введіть посилання');
+        return;
+      }
 
-// Сокращение ссылки
-app.post('/shorten', (req, res) => {
-  const url = req.body.url;
-  let customCode = req.body.custom || Math.random().toString(36).substring(2, 8);
+      try {
+        const response = await fetch('https://url-api.onrender.com/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(alias)}`
+        });
 
-  db.run('INSERT OR REPLACE INTO urls (code, url) VALUES (?, ?)', [customCode, url], err => {
-    if (err) return res.status(500).send('DB error');
-    res.send(`${req.protocol}://${req.get('host')}/${customCode}`);
+        const text = await response.text();
+        if (!response.ok) throw new Error(text);
+
+        resultInput.value = text;
+        lastCode = text.split('/').pop();
+        statsBtn.style.display = 'block';
+      } catch (err) {
+        alert('Помилка скорочення посилання. Спробуйте ще раз.');
+        console.error(err);
+      }
+    });
+
+    statsBtn.addEventListener('click', () => {
+      if (lastCode) {
+        window.open(`https://url-api.onrender.com/${lastCode}/stats`, '_blank');
+      }
+    });
   });
-});
-
-// Переход по короткой ссылке и логирование
-app.get('/:code', (req, res) => {
-  const code = req.params.code;
-  db.get('SELECT url FROM urls WHERE code = ?', [code], (err, row) => {
-    if (err || !row) return res.status(404).send('Not found');
-
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
-    const geo = geoip.lookup(ip) || {};
-
-    db.run('INSERT INTO clicks_log (code, ip, country, city) VALUES (?, ?, ?, ?)', [
-      code,
-      ip,
-      geo.country || '-',
-      geo.city || '-'
-    ]);
-
-    res.redirect(row.url);
-  });
-});
-
-// Просмотр статистики
-app.get('/:code/stats', (req, res) => {
-  const code = req.params.code;
-  db.all('SELECT ip, country, city, timestamp FROM clicks_log WHERE code = ? ORDER BY timestamp DESC', [code], (err, rows) => {
-    if (err) return res.status(500).send('DB error');
-
-    let html = `
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Статистика для ${code}</title>
-          <style>
-            body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
-            table { border-collapse: collapse; width: 100%; background: #fff; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-            th { background: #eee; }
-          </style>
-        </head>
-        <body>
-          <h2>Статистика для /${code}</h2>
-          <table>
-            <tr><th>IP</th><th>Страна</th><th>Город</th><th>Время</th></tr>
-            ${rows.map(r => `<tr><td>${r.ip}</td><td>${r.country}</td><td>${r.city}</td><td>${r.timestamp}</td></tr>`).join('')}
-          </table>
-        </body>
-      </html>
-    `;
-    res.send(html);
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server started on http://localhost:${PORT}`));
+  </script>
+</body>
+</html>
