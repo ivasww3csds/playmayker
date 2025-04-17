@@ -2,25 +2,31 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Статистика переходів</title>
   <style>
     body {
-      background: #111;
-      color: #eee;
-      font-family: Arial, sans-serif;
-      padding: 40px;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
     }
     h1 {
       color: #FFD057;
-      text-align: center;
+      margin-bottom: 30px;
     }
     table {
       width: 100%;
+      max-width: 900px;
       border-collapse: collapse;
-      margin-top: 20px;
-      background: #1c1c1c;
-      border-radius: 8px;
+      background: #1f1f1f;
+      border-radius: 10px;
       overflow: hidden;
+      box-shadow: 0 0 12px rgba(255, 208, 87, 0.1);
     }
     th, td {
       padding: 12px 16px;
@@ -28,11 +34,12 @@
       text-align: left;
     }
     th {
-      background: #FFD057;
-      color: #111;
+      background: #5a441f;
+      color: #FFD057;
+      font-weight: 600;
     }
-    tr:hover {
-      background: #222;
+    tr:hover td {
+      background-color: #292929;
     }
   </style>
 </head>
@@ -47,28 +54,35 @@
         <th>Дата</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody>
+      <!-- Дані будуть додані через JavaScript -->
+    </tbody>
   </table>
 
   <script>
-    const code = window.location.pathname.split("/")[1];
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
     fetch(`/${code}/stats`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Fetch error');
+        return res.json();
+      })
       .then(data => {
-        const tbody = document.querySelector("#stats-table tbody");
-        data.details.forEach(row => {
-          const tr = document.createElement("tr");
+        const tbody = document.querySelector('#stats-table tbody');
+        data.details.forEach(stat => {
+          const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${row.ip}</td>
-            <td>${row.country}</td>
-            <td>${row.city}</td>
-            <td>${new Date(row.date).toLocaleString()}</td>
+            <td>${stat.ip}</td>
+            <td>${stat.country}</td>
+            <td>${stat.city}</td>
+            <td>${new Date(stat.date).toLocaleString()}</td>
           `;
           tbody.appendChild(tr);
         });
       })
-      .catch(() => {
-        alert("Помилка завантаження статистики");
+      .catch(err => {
+        alert('Помилка завантаження статистики');
       });
   </script>
 </body>
