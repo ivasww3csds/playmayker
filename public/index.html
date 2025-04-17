@@ -57,7 +57,7 @@
 <body>
   <div class="container">
     <h2>Скоротіть посилання</h2>
-    <form>
+    <form id="shortener-form">
       <input type="url" name="url" placeholder="Вставте ваше посилання" required />
       <input type="text" name="alias" placeholder="Бажаний код (необов’язково)" />
       <button type="submit">Скоротити</button>
@@ -68,7 +68,7 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('form');
+    const form = document.getElementById('shortener-form');
     const urlInput = document.querySelector('input[name="url"]');
     const aliasInput = document.querySelector('input[name="alias"]');
     const resultInput = document.getElementById('result');
