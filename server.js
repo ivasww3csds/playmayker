@@ -42,7 +42,6 @@ app.get('/', (req, res) => {
         table { width: 100%; margin-top: 10px; background: #fff; color: #000; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 10px; }
         th { background: #f2f2f2; }
-        #shortUrl { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
       </style>
     </head>
     <body>
@@ -59,6 +58,7 @@ app.get('/', (req, res) => {
         </div>
         <div id="statsTable"></div>
       </div>
+
       <script>
         let currentCode = '';
 
@@ -70,13 +70,9 @@ app.get('/', (req, res) => {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData
           });
-          const html = await response.text();
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = html;
-          const input = tempDiv.querySelector('input');
-          const shortLink = input?.value || '';
-          currentCode = shortLink.split('/').pop();
-          document.getElementById('shortUrl').value = shortLink;
+          const shortUrl = await response.text();
+          currentCode = shortUrl.split('/').pop();
+          document.getElementById('shortUrl').value = shortUrl;
           document.getElementById('shortUrlContainer').style.display = 'block';
           document.getElementById('statsTable').style.display = 'none';
         });
@@ -99,7 +95,7 @@ app.post('/shorten', (req, res) => {
   db.run(`INSERT INTO urls (code, longUrl) VALUES (?, ?)`, [customCode, longUrl], function (err) {
     if (err) return res.status(500).send('Помилка при створенні');
     const shortUrl = `${req.protocol}://${req.get('host')}/${customCode}`;
-    res.send(`<input type="text" value="${shortUrl}" readonly onclick="this.select(); document.execCommand('copy');" />`);
+    res.send(shortUrl);
   });
 });
 
