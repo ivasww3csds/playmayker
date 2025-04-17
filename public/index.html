@@ -72,10 +72,8 @@
       <input type="text" name="custom" placeholder="Бажаний код (необов’язково)">
       <button type="submit">Скоротити</button>
     </form>
-    <div id="shortUrlContainer">
-      <input id="shortUrl" readonly onclick="this.select(); document.execCommand('copy');">
-      <button id="showStatsBtn">Переглянути статистику</button>
-    </div>
+    <input id="shortUrl" readonly onclick="this.select(); document.execCommand('copy');" style="display:none">
+    <button id="showStatsBtn" style="display:none">Переглянути статистику</button>
     <div id="statsTable"></div>
   </div>
   <script>
@@ -95,8 +93,10 @@
       const input = tempDiv.querySelector('input');
       const shortLink = input?.value || '';
       currentCode = shortLink.split('/').pop();
-      document.getElementById('shortUrl').value = shortLink;
-      document.getElementById('shortUrlContainer').style.display = 'block';
+      const shortUrlInput = document.getElementById('shortUrl');
+      shortUrlInput.value = shortLink;
+      shortUrlInput.style.display = 'block';
+      document.getElementById('showStatsBtn').style.display = 'block';
       document.getElementById('statsTable').style.display = 'none';
     });
 
