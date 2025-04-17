@@ -1,4 +1,4 @@
-const express = require('express');
+""const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bodyParser = require('body-parser');
@@ -45,16 +45,17 @@ app.post('/shorten', (req, res) => {
             body { font-family: 'Segoe UI', sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
             .box { background: #222; padding: 40px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.4); text-align: center; max-width: 500px; width: 100%; }
             .box h2 { margin-bottom: 20px; }
-            .box a { color: #FFD057; text-decoration: none; font-weight: bold; display: block; margin-top: 10px; }
-            .button { background: #FFD057; color: #000; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+            .box input { width: 100%; padding: 10px; border-radius: 5px; border: none; text-align: center; }
+            .button { background: #FFD057; color: #000; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; display: block; margin: 10px auto; width: fit-content; }
+            a { text-decoration: none; }
           </style>
         </head>
         <body>
           <div class="box">
             <h2>Ваше скорочене посилання</h2>
-            <input type="text" value="${shortUrl}" style="width:100%; padding:10px; border-radius:5px; border:none; text-align:center;" readonly />
-            <a href="${statsUrl}" target="_blank" class="button">Переглянути статистику</a>
-            <a href="/">⬅ Повернутись назад</a>
+            <input type="text" value="${shortUrl}" readonly onclick="this.select(); document.execCommand('copy');" />
+            <a href="${statsUrl}" class="button">Переглянути статистику</a>
+            <a href="/" class="button">⬅ Повернутись назад</a>
           </div>
         </body>
       </html>
