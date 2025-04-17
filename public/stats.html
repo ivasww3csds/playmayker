@@ -70,30 +70,34 @@
   <div class="error" id="error"></div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const codeFromURL = window.location.pathname.split('/')[1]; // вытаскиваем "calc" из /calc/stats
+  const code = window.location.pathname.split('/')[1]; // "calc"
 
-    fetch(`/${codeFromURL}/stats`)
-      .then(res => {
-        if (!res.ok) throw new Error("Немає даних для цього коду");
-        return res.json();
-      })
-      .then(data => {
-        const tbody = document.querySelector('#stats-table tbody');
-        data.details.forEach(stat => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${stat.ip}</td>
-            <td>${stat.country}</td>
-            <td>${stat.city}</td>
-            <td>${new Date(stat.date).toLocaleString()}</td>
-          `;
-          tbody.appendChild(row);
-        });
-      })
-      .catch(err => {
-        document.getElementById('error').textContent = err.message;
-      });
-  </script>
+  fetch(`/${code}/stats`, {
+    headers: {
+      'Accept': 'application/json'
+    }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Помилка завантаження статистики");
+    return res.json();
+  })
+  .then(data => {
+    const tbody = document.querySelector('#stats-table tbody');
+    data.details.forEach(stat => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${stat.ip}</td>
+        <td>${stat.country}</td>
+        <td>${stat.city}</td>
+        <td>${new Date(stat.date).toLocaleString()}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  })
+  .catch(err => {
+    document.getElementById('error').textContent = err.message;
+  });
+</script>
+
 </body>
 </html>
