@@ -1,54 +1,72 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <title>Скоротіть посилання</title>
+  <meta charset="UTF-8">
+  <title>Скоротити посилання</title>
   <style>
     body {
-      background: #111;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #111;
       color: white;
-      font-family: sans-serif;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       height: 100vh;
     }
     .container {
-      background: #1e1e1e;
+      background: #1c1c1c;
       padding: 30px;
       border-radius: 10px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    h1 {
+      margin-bottom: 20px;
     }
     input, button {
+      padding: 10px;
+      margin-bottom: 10px;
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
+      border-radius: 5px;
       border: none;
-      border-radius: 6px;
+    }
+    input {
+      background: #fff;
+      color: #000;
     }
     button {
-      background: #FFD057;
+      background: #FFD54F;
       font-weight: bold;
-      cursor: pointer;
     }
-    .info {
-      font-size: 14px;
-      margin-top: 20px;
-      color: #bbb;
+    .note {
+      font-size: 0.9em;
+      margin-top: 10px;
+      color: #ccc;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Скоротіть посилання</h1>
-    <form method="POST" action="/shorten">
-      <input type="url" name="url" placeholder="Вставте посилання тут" required />
-      <input type="text" name="custom" placeholder="Бажаний код (необов’язково)" />
+    <form id="shortenForm">
+      <input type="url" name="url" placeholder="Вставте посилання тут" required>
+      <input type="text" name="custom" placeholder="Бажаний код (необов’язково)">
       <button type="submit">Скоротити</button>
     </form>
-    <div class="info">Після скорочення — додайте <code>/stats</code> для перегляду статистики.</div>
+    <div class="note">Після скорочення — додайте <code>/stats</code> для перегляду статистики.</div>
+    <script>
+      const form = document.getElementById('shortenForm');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = new URLSearchParams(new FormData(form));
+        const response = await fetch('/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: data
+        });
+        const shortUrl = await response.text();
+        alert("Скорочене посилання: " + shortUrl);
+      });
+    </script>
   </div>
 </body>
 </html>
