@@ -3,150 +3,114 @@
 <head>
   <meta charset="UTF-8">
   <title>Скоротіть посилання</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    :root {
-      --accent: #FFD057;
-      --bg-dark: #111;
-      --bg-box: #1c1c1c;
-      --text-light: #fff;
-      --text-dark: #000;
-    }
-    * {
-      box-sizing: border-box;
-    }
     body {
-      margin: 0;
-      font-family: 'ROBOTO', sans-serif;
-      background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
-      color: var(--text-light);
-      height: 100vh;
+      background-color: #111;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      height: 100vh;
+      margin: 0;
     }
-    .box {
-      background: var(--bg-box);
+    .container {
+      background: #222;
       padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 0 30px rgba(138, 133, 120, 0.2), 0 0 10px rgba(255, 255, 255, 0.05);
-      text-align: center;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(255, 208, 87, 0.2);
       width: 100%;
-      max-width: 540px;
-      animation: fadeIn 1s ease-in-out;
-    }
-    h2 {
-      margin-bottom: 20px;
-      font-size: 28px;
-      color: var(--accent);
-      text-shadow: 0 0 8px rgba(255, 208, 87, 0.3);
+      max-width: 500px;
+      text-align: center;
     }
     input, button {
       width: 100%;
-      padding: 12px;
-      margin: 12px 0;
+      padding: 10px;
+      margin: 10px 0;
       border-radius: 6px;
       border: none;
       font-size: 16px;
-      transition: all 0.3s ease;
     }
     input {
-      background: #2a2a2a;
-      color: var(--text-light);
-      box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.05);
-    }
-    input:focus {
-      outline: none;
-      box-shadow: 0 0 10px var(--accent);
+      background-color: #333;
+      color: #fff;
     }
     button {
-      background: var(--accent);
-      color: var(--text-dark);
-      font-weight: 600;
+      background-color: #FFD057;
+      color: #000;
+      font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(255, 208, 87, 0.4);
     }
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 208, 87, 0.6);
-    }
-    #shortUrlContainer {
+    #stats-btn {
       display: none;
-      margin-top: 24px;
-      animation: fadeIn 0.6s ease-in-out;
+      background-color: #444;
+      color: #fff;
     }
-    #shortUrl {
-      background: #2a2a2a;
-      color: #ffffff;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    #result {
+      background-color: #fff;
+      color: #000;
     }
   </style>
 </head>
 <body>
-  <div class="box">
+  <div class="container">
     <h2>Скоротіть посилання</h2>
-    <form id="shortenForm">
-      <input type="url" name="url" placeholder="https://example.com" required>
-      <input type="text" name="custom" placeholder="Бажаний код (необов’язково)">
+    <form>
+      <input type="url" name="url" placeholder="Вставте ваше посилання" required />
+      <input type="text" name="alias" placeholder="Бажаний код (необов’язково)" />
       <button type="submit">Скоротити</button>
     </form>
-    <div id="shortUrlContainer">
-      <input id="shortUrl" readonly onclick="this.select(); document.execCommand('copy');">
-      <button id="showStatsBtn">Переглянути статистику</button>
-    </div>
+    <input id="result" readonly placeholder="Тут з'явиться коротке посилання" />
+    <button id="stats-btn">Переглянути статистику</button>
   </div>
+
   <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.querySelector('form');
-  const urlInput = document.querySelector('input[name="url"]');
-  const aliasInput = document.querySelector('input[name="alias"]');
-  const resultInput = document.getElementById('result');
-  const statsBtn = document.getElementById('stats-btn');
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('form');
+    const urlInput = document.querySelector('input[name="url"]');
+    const aliasInput = document.querySelector('input[name="alias"]');
+    const resultInput = document.getElementById('result');
+    const statsBtn = document.getElementById('stats-btn');
 
-  let lastCode = '';
+    let lastCode = '';
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const url = urlInput.value.trim();
-    const alias = aliasInput.value.trim();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      const alias = aliasInput.value.trim();
 
-    if (!url) {
-      alert('Введіть посилання');
-      return;
-    }
+      if (!url) {
+        alert('Введіть посилання');
+        return;
+      }
 
-    try {
-      const response = await fetch('https://url-api.onrender.com/shorten', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(alias)}`
-      });
+      try {
+        const response = await fetch('https://url-api.onrender.com/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(alias)}`
+        });
 
-      const text = await response.text();
-      if (!response.ok) throw new Error(text);
+        const text = await response.text();
+        if (!response.ok) throw new Error(text);
 
-      resultInput.value = text;
-      lastCode = text.split('/').pop(); // сохраняем для кнопки статистики
-      statsBtn.style.display = 'block';
-    } catch (err) {
-      alert('Помилка скорочення посилання. Спробуйте ще раз.');
-      console.error(err);
-    }
+        resultInput.value = text;
+        lastCode = text.split('/').pop();
+        statsBtn.style.display = 'block';
+      } catch (err) {
+        alert('Помилка скорочення посилання. Спробуйте ще раз.');
+        console.error(err);
+      }
+    });
+
+    statsBtn.addEventListener('click', () => {
+      if (lastCode) {
+        window.open(`https://url-api.onrender.com/${lastCode}/stats`, '_blank');
+      }
+    });
   });
-
-  statsBtn.addEventListener('click', () => {
-    if (lastCode) {
-      window.open(`https://url-api.onrender.com/${lastCode}/stats`, '_blank');
-    }
-  });
-});
-</script>
-
+  </script>
 </body>
 </html>
