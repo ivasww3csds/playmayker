@@ -63,35 +63,34 @@
       <button id="showStatsBtn">Переглянути статистику</button>
     </div>
   </div>
- <script>
-  let currentCode = '';
+  <script>
+    let currentCode = '';
 
-  document.getElementById('shortenForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const formData = new URLSearchParams(new FormData(this));
-    const response = await fetch('/shorten', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData
+    document.getElementById('shortenForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new URLSearchParams(new FormData(this));
+      const response = await fetch('/shorten', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData
+      });
+
+      const shortLink = await response.text();
+      if (shortLink && shortLink.startsWith('http')) {
+        currentCode = shortLink.split('/').pop();
+        document.getElementById('shortUrl').value = shortLink;
+        document.getElementById('shortUrlContainer').style.display = 'block';
+      } else {
+        alert("Помилка скорочення посилання. Спробуйте ще раз.");
+      }
     });
 
-    const shortLink = await response.text();
-    if (shortLink && shortLink.startsWith('http')) {
-      currentCode = shortLink.split('/').pop();
-      document.getElementById('shortUrl').value = shortLink;
-      document.getElementById('shortUrlContainer').style.display = 'block';
-    } else {
-      alert("Помилка скорочення посилання. Спробуйте ще раз.");
+    document.getElementById('showStatsBtn').onclick = function() {
+      if (currentCode) {
+        const statsUrl = '/' + currentCode + '/stats';
+        window.open(statsUrl, '_blank');
+      }
     }
-  });
-
-  document.getElementById('showStatsBtn').onclick = function() {
-    if (currentCode) {
-      const statsUrl = '/' + currentCode + '/stats';
-      window.open(statsUrl, '_blank');
-    }
-  }
-</script>
-
+  </script>
 </body>
 </html>
