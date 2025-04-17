@@ -120,8 +120,8 @@
 
         result.style.display = 'block';
         result.innerHTML = `
-          <a href="${fullLink}" target="_blank">${fullLink}</a><br>
-          <a class="stats-link" href="${host}/${code}/stats" target="_blank">📊 Переглянути статистику</a>
+          <a href="${origin}/${data.short}" target="_blank">${origin}/${data.short}</a><br>
+          <a href="/stats.html?code=${data.short}" target="_blank">📊 Переглянути статистику</a>
         `;
       } catch (err) {
         alert("Помилка: " + err.message);
