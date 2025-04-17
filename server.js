@@ -33,16 +33,19 @@ app.get('/:code', (req, res) => {
   res.redirect(entry.url);
 });
 
+// HTML-страница статистики
 app.get('/:code/stats', (req, res) => {
-  if (req.accepts('html')) {
-    return res.sendFile(__dirname + '/public/stats.html');
-  }
+  res.sendFile(__dirname + '/public/stats.html');
+});
 
+// JSON API для получения логов
+app.get('/api/:code/stats', (req, res) => {
   const code = req.params.code;
   const stats = db.get(code);
   if (!stats) return res.status(404).json({ error: 'Not found' });
   res.json({ details: stats.logs });
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
