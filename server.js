@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const path = require('path');
 const geoip = require('geoip-lite');
@@ -13,39 +12,38 @@ app.post('/shorten', (req, res) => {
   const { url, custom } = req.body;
   const code = custom || Math.random().toString(36).substring(2, 8);
   db.set(code, { url, clicks: 0, logs: [] });
-  res.json({ short: code });
+  res.json({ short: `${code}` });
 });
 
 app.get('/:code', (req, res) => {
   const entry = db.get(req.params.code);
   if (!entry) return res.status(404).send('Not found');
-
   entry.clicks++;
+
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   const geo = geoip.lookup(ip) || {};
   entry.logs.push({
     ip,
     country: geo.country || 'N/A',
     city: geo.city || 'N/A',
-    date: new Date(),
+    date: new Date()
   });
 
   res.redirect(entry.url);
 });
 
-// HTML-страница статистики
+// HTML page
 app.get('/:code/stats', (req, res) => {
-  res.sendFile(__dirname + '/public/stats.html');
+  res.sendFile(path.join(__dirname, 'public', 'stats.html'));
 });
 
-// JSON API для получения логов
+// API endpoint
 app.get('/api/:code/stats', (req, res) => {
   const code = req.params.code;
   const stats = db.get(code);
   if (!stats) return res.status(404).json({ error: 'Not found' });
   res.json({ details: stats.logs });
 });
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
