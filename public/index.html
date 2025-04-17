@@ -2,69 +2,65 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Скоротити посилання</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Скорочувач посилань</title>
   <style>
     body {
       margin: 0;
-      background-color: #0d0d0d;
       font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #fff;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      min-height: 100vh;
-      color: white;
+      padding: 40px 20px;
     }
-
-    .container {
-      background: #1c1c1c;
-      padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 0 20px rgba(255, 208, 87, 0.2);
-      width: 100%;
-      max-width: 500px;
-      text-align: center;
-    }
-
     h1 {
       color: #FFD057;
       margin-bottom: 30px;
     }
-
+    .container {
+      background: #1a1a1a;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(255, 208, 87, 0.15);
+      max-width: 500px;
+      width: 100%;
+    }
     input, button {
       width: 100%;
-      padding: 12px 16px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+      padding: 14px;
+      border-radius: 8px;
       font-size: 16px;
       border: none;
-      border-radius: 8px;
-      box-sizing: border-box;
     }
-
     input {
-      background-color: #333;
+      background: #333;
       color: #fff;
     }
-
     button {
-      background-color: #FFD057;
-      color: #000;
+      background: #FFD057;
       font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background-color: #e0b84a;
-    }
-
-    #result {
-      background-color: #fff;
       color: #000;
-      padding: 10px;
-      border-radius: 8px;
-      margin-top: 10px;
-      word-break: break-word;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #e6bd48;
+    }
+    .result {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .result a {
+      display: block;
+      color: #5a00a0;
+      text-decoration: underline;
+      margin-bottom: 8px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -72,9 +68,9 @@
   <div class="container">
     <h1>Скоротіть посилання</h1>
     <input type="text" id="url" placeholder="https://example.com" />
-    <input type="text" id="custom" placeholder="Бажаний код (необов'язково)" />
+    <input type="text" id="custom" placeholder="Бажаний код (необов’язково)" />
     <button onclick="shorten()">Скоротити</button>
-    <div id="result">Тут з'явиться коротке посилання</div>
+    <div class="result" id="result"></div>
   </div>
 
   <script>
@@ -82,9 +78,10 @@
       const url = document.getElementById('url').value.trim();
       const custom = document.getElementById('custom').value.trim();
       const result = document.getElementById('result');
+      result.innerHTML = '';
 
       if (!url) {
-        alert('Введіть URL!');
+        alert('Введіть посилання!');
         return;
       }
 
@@ -101,7 +98,14 @@
         }
 
         const data = await res.json();
-        result.innerHTML = `<a href="${data.shortUrl}" target="_blank">${data.shortUrl}</a>`;
+        const code = custom || data.short.replace('/', '');
+        const fullShort = window.location.origin + data.short;
+        const fullStats = window.location.origin + `/stats.html?code=${code}`;
+        
+        result.innerHTML = `
+          <a href="${fullShort}" target="_blank">${fullShort}</a>
+          <a href="${fullStats}" target="_blank">📊 Переглянути статистику</a>
+        `;
       } catch (err) {
         alert('Помилка: ' + err.message);
       }
