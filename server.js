@@ -1,102 +1,64 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Статистика переходів</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #000;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
-    }
-    h1 {
-      color: #FFD057;
-      margin-bottom: 30px;
-    }
-    table {
-      width: 100%;
-      max-width: 1000px;
-      border-collapse: collapse;
-      background: #1c1c1c;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 14px rgba(255, 208, 87, 0.15);
-    }
-    th, td {
-      padding: 14px 18px;
-      border-bottom: 1px solid #333;
-      text-align: left;
-      font-size: 15px;
-    }
-    th {
-      background: #5a441f;
-      color: #FFD057;
-      font-weight: 600;
-    }
-    tr:hover td {
-      background-color: #2a2a2a;
-    }
-    .error {
-      color: red;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <h1>Детальна статистика переходів</h1>
-  <table id="stats-table">
-    <thead>
-      <tr>
-        <th>IP</th>
-        <th>Країна</th>
-        <th>Місто</th>
-        <th>Дата</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Дані будуть додані через JavaScript -->
-    </tbody>
-  </table>
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const geoip = require('geoip-lite');
+const app = express();
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.static('public'));
 
-    fetch(`/${code}/stats`)
-      .then(res => {
-        if (!res.ok) throw new Error('Не вдалося отримати дані');
-        return res.json();
-      })
-      .then(data => {
-        const tbody = document.querySelector('#stats-table tbody');
-        if (!data.details || data.details.length === 0) {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td colspan="4" style="text-align: center; color: #999;">Немає даних для відображення</td>`;
-          tbody.appendChild(tr);
-          return;
-        }
+const dbPath = path.join(__dirname, 'shortener.json');
+const statPath = path.join(__dirname, 'stats.json');
 
-        data.details.forEach(stat => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${stat.ip}</td>
-            <td>${stat.country || '-'}</td>
-            <td>${stat.city || '-'}</td>
-            <td>${new Date(stat.date).toLocaleString('uk-UA')}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      })
-      .catch(err => {
-        alert('Помилка завантаження статистики');
-        console.error(err);
-      });
-  </script>
-</body>
-</html>
+function load(file) {
+  if (!fs.existsSync(file)) return {};
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+function save(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+app.post('/shorten', (req, res) => {
+  const { url, custom } = req.body;
+  const db = load(dbPath);
+  const code = custom || Math.random().toString(36).substring(2, 7);
+  if (db[code]) return res.status(409).send('Цей код уже використовується');
+  db[code] = { url, clicks: 0 };
+  save(dbPath, db);
+  res.send({ short: `${req.headers.origin}/${code}` });
+});
+
+app.get('/:code', (req, res) => {
+  const db = load(dbPath);
+  const stats = load(statPath);
+  const entry = db[req.params.code];
+  if (!entry) return res.status(404).send('Не знайдено');
+
+  entry.clicks += 1;
+  db[req.params.code] = entry;
+  save(dbPath, db);
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
+  const geo = geoip.lookup(ip) || {};
+  stats[req.params.code] = stats[req.params.code] || [];
+  stats[req.params.code].push({
+    ip,
+    country: geo.country || 'Невідомо',
+    city: geo.city || 'Невідомо',
+    date: new Date().toISOString()
+  });
+  save(statPath, stats);
+
+  res.redirect(entry.url);
+});
+
+app.get('/:code/stats', (req, res) => {
+  const stats = load(statPath);
+  res.send({ details: stats[req.params.code] || [] });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Сервер працює на порті ${PORT}`);
+});
