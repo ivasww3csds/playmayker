@@ -2,95 +2,71 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>Скоротіть посилання</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Скоротити посилання</title>
   <style>
     body {
-      background-color: #111;
-      color: #fff;
       font-family: 'Segoe UI', sans-serif;
+      background-color: #111;
+      color: white;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
-      margin: 0;
     }
     .container {
-      background: #222;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(255, 208, 87, 0.2);
-      width: 100%;
-      max-width: 500px;
-      text-align: center;
+      background: #1c1c1c;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    h1 {
+      margin-bottom: 20px;
     }
     input, button {
-      width: 100%;
       padding: 10px;
-      margin: 10px 0;
-      border-radius: 6px;
+      margin-bottom: 10px;
+      width: 100%;
+      border-radius: 5px;
       border: none;
-      font-size: 16px;
     }
     input {
-      background-color: #333;
-      color: #fff;
+      background: #fff;
+      color: #000;
     }
     button {
-      background-color: #FFD057;
-      color: #000;
+      background: #FFD54F;
       font-weight: bold;
-      cursor: pointer;
     }
-    #stats-btn {
-      display: none;
-      background-color: #444;
-      color: #fff;
-    }
-    #result {
-      background-color: #fff;
-      color: #000;
+    .note {
+      font-size: 0.9em;
+      margin-top: 10px;
+      color: #ccc;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Скоротіть посилання</h2>
-    <form id="shortener-form">
-      <input type="url" name="url" placeholder="Вставте ваше посилання" required />
-      <input type="text" name="alias" placeholder="Бажаний код (необов’язково)" />
+    <h1>Скоротіть посилання</h1>
+    <form id="shortenForm">
+      <input type="url" name="url" placeholder="Вставте посилання тут" required>
+      <input type="text" name="custom" placeholder="Бажаний код (необов’язково)">
       <button type="submit">Скоротити</button>
     </form>
-    <input id="result" readonly placeholder="Тут з'явиться коротке посилання" />
-    <button id="stats-btn">Переглянути статистику</button>
-  </div>
-
-  <script>
-  const form = document.getElementById('shortener-form');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const url = document.getElementById('url').value;
-    const alias = document.getElementById('custom').value;
-
-    try {
-      const response = await fetch('https://url-api.onrender.com/shorten', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(alias)}`
+    <div class="note">Після скорочення — додайте <code>/stats</code> для перегляду статистики.</div>
+    <script>
+      const form = document.getElementById('shortenForm');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = new URLSearchParams(new FormData(form));
+        const response = await fetch('/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: data
+        });
+        const shortUrl = await response.text();
+        alert("Скорочене посилання: " + shortUrl);
       });
-
-      const shortUrl = await response.text();
-      if (response.ok) {
-        document.getElementById('result').value = shortUrl;
-      } else {
-        alert(`Помилка: ${shortUrl}`);
-      }
-    } catch (error) {
-      alert('Помилка з’єднання із сервером');
-    }
-  });
-</script>
-
+    </script>
+  </div>
 </body>
 </html>
