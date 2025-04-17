@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Статистика переходів</title>
   <style>
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: #000;
+      background: #0d0d0d;
       color: #fff;
       display: flex;
       flex-direction: column;
@@ -41,6 +41,10 @@
     tr:hover td {
       background-color: #292929;
     }
+    .error {
+      color: red;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -59,31 +63,41 @@
     </tbody>
   </table>
 
+  <p id="error" class="error"></p>
+
   <script>
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
 
-    fetch(`/${code}/stats`)
-      .then(res => {
-        if (!res.ok) throw new Error('Fetch error');
-        return res.json();
-      })
-      .then(data => {
-        const tbody = document.querySelector('#stats-table tbody');
-        data.details.forEach(stat => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${stat.ip}</td>
-            <td>${stat.country}</td>
-            <td>${stat.city}</td>
-            <td>${new Date(stat.date).toLocaleString()}</td>
-          `;
-          tbody.appendChild(tr);
+    if (!code) {
+      document.getElementById('error').textContent = "Не вказано параметр ?code=";
+    } else {
+      fetch(`/${code}/stats`)
+        .then(res => {
+          if (!res.ok) throw new Error('Сервер не відповідає');
+          return res.json();
+        })
+        .then(data => {
+          const tbody = document.querySelector('#stats-table tbody');
+          if (!data.details || data.details.length === 0) {
+            document.getElementById('error').textContent = "Немає записів для цього посилання.";
+            return;
+          }
+          data.details.forEach(stat => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${stat.ip}</td>
+              <td>${stat.country}</td>
+              <td>${stat.city}</td>
+              <td>${new Date(stat.date).toLocaleString()}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(err => {
+          document.getElementById('error').textContent = "Помилка завантаження статистики.";
         });
-      })
-      .catch(err => {
-        alert('Помилка завантаження статистики');
-      });
+    }
   </script>
 </body>
 </html>
