@@ -5,8 +5,9 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
+// База данных
 const db = new sqlite3.Database('./database.db');
 db.run(`CREATE TABLE IF NOT EXISTS urls (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,13 +17,14 @@ db.run(`CREATE TABLE IF NOT EXISTS urls (
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 )`);
 
-app.use(bodyParser.urlencoded({ extended: true }));
+// 👉 Вот эта строка фиксит твою ошибку:
 app.use(express.static('public'));
+
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/shorten', (req, res) => {
   const longUrl = req.body.url;
   const code = crypto.randomBytes(3).toString('hex');
-
   db.run(`INSERT INTO urls (code, longUrl) VALUES (?, ?)`, [code, longUrl], function (err) {
     if (err) return res.status(500).send('Помилка при створенні');
     res.send(`${req.protocol}://${req.get('host')}/${code}`);
