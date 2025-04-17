@@ -1,64 +1,102 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const sqlite3 = require('sqlite3').verbose();
-const crypto = require('crypto');
-const path = require('path');
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Статистика переходів</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    h1 {
+      color: #FFD057;
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      max-width: 1000px;
+      border-collapse: collapse;
+      background: #1c1c1c;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 14px rgba(255, 208, 87, 0.15);
+    }
+    th, td {
+      padding: 14px 18px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+      font-size: 15px;
+    }
+    th {
+      background: #5a441f;
+      color: #FFD057;
+      font-weight: 600;
+    }
+    tr:hover td {
+      background-color: #2a2a2a;
+    }
+    .error {
+      color: red;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Детальна статистика переходів</h1>
+  <table id="stats-table">
+    <thead>
+      <tr>
+        <th>IP</th>
+        <th>Країна</th>
+        <th>Місто</th>
+        <th>Дата</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Дані будуть додані через JavaScript -->
+    </tbody>
+  </table>
 
-const app = express();
-const db = new sqlite3.Database('./shortener.db');
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+    fetch(`/${code}/stats`)
+      .then(res => {
+        if (!res.ok) throw new Error('Не вдалося отримати дані');
+        return res.json();
+      })
+      .then(data => {
+        const tbody = document.querySelector('#stats-table tbody');
+        if (!data.details || data.details.length === 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="4" style="text-align: center; color: #999;">Немає даних для відображення</td>`;
+          tbody.appendChild(tr);
+          return;
+        }
 
-// Створити таблицю, якщо не існує
-db.run(`CREATE TABLE IF NOT EXISTS links (
-  code TEXT PRIMARY KEY,
-  url TEXT,
-  clicks INTEGER DEFAULT 0
-)`);
-
-// Віддати index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Створити коротке посилання
-app.post('/shorten', (req, res) => {
-  const { url, custom } = req.body;
-  const code = custom || crypto.randomBytes(3).toString('hex');
-
-  db.get('SELECT code FROM links WHERE code = ?', [code], (err, row) => {
-    if (err) return res.status(500).send('Помилка сервера');
-    if (row) return res.status(400).send('Цей код уже зайнятий');
-
-    db.run('INSERT INTO links (code, url) VALUES (?, ?)', [code, url], (err) => {
-      if (err) return res.status(500).send('Помилка запису в базу');
-      const shortUrl = `${req.protocol}://${req.get('host')}/${code}`;
-      res.send(shortUrl);
-    });
-  });
-});
-
-// Перенаправлення
-app.get('/:code', (req, res) => {
-  const code = req.params.code;
-  db.get('SELECT url FROM links WHERE code = ?', [code], (err, row) => {
-    if (err || !row) return res.status(404).send('Посилання не знайдено');
-    db.run('UPDATE links SET clicks = clicks + 1 WHERE code = ?', [code]);
-    res.redirect(row.url);
-  });
-});
-
-// Статистика
-app.get('/:code/stats', (req, res) => {
-  const code = req.params.code;
-  db.get('SELECT code, url, clicks FROM links WHERE code = ?', [code], (err, row) => {
-    if (err || !row) return res.status(404).send('Посилання не знайдено');
-    res.json(row);
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Сервер працює на порті ${PORT}`);
-});
+        data.details.forEach(stat => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${stat.ip}</td>
+            <td>${stat.country || '-'}</td>
+            <td>${stat.city || '-'}</td>
+            <td>${new Date(stat.date).toLocaleString('uk-UA')}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        alert('Помилка завантаження статистики');
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
