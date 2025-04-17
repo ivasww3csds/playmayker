@@ -7,79 +7,67 @@
   <style>
     body {
       background: #000;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: sans-serif;
       color: #fff;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       height: 100vh;
-      margin: 0;
     }
-
-    .box {
-      background: #1c1c1c;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 0 20px #FFD05744;
-      width: 100%;
-      max-width: 500px;
+    .container {
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #FFD05733;
       text-align: center;
+      max-width: 500px;
+      width: 100%;
     }
-
-    h1 {
-      margin-bottom: 20px;
-      color: #FFD057;
-    }
-
     input, button {
       width: 100%;
-      padding: 15px;
-      margin-top: 10px;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 6px;
       border: none;
-      border-radius: 8px;
       font-size: 16px;
     }
-
     input {
       background: #333;
       color: #fff;
     }
-
     button {
       background: #FFD057;
-      color: #000;
       font-weight: bold;
-      cursor: pointer;
     }
-
     #result {
       background: #fff;
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 10px;
       color: #000;
-    }
-
-    #result a {
-      color: purple;
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Скоротіть посилання</h1>
-    <input id="url" placeholder="Вставте URL" />
-    <input id="custom" placeholder="Бажаний код (необов’язково)" />
+  <div class="container">
+    <h2>Скоротіть посилання</h2>
+    <input type="text" id="url" placeholder="Вставте URL" />
+    <input type="text" id="custom" placeholder="Бажаний код (необов'язково)" />
     <button onclick="shorten()">Скоротити</button>
     <div id="result"></div>
   </div>
 
   <script>
     async function shorten() {
-      const url = document.getElementById('url').value;
-      const custom = document.getElementById('custom').value;
+      const url = document.getElementById('url').value.trim();
+      const custom = document.getElementById('custom').value.trim();
       const result = document.getElementById('result');
       result.innerHTML = '';
+
+      if (!url) {
+        alert('Введіть посилання');
+        return;
+      }
 
       try {
         const res = await fetch('/shorten', {
@@ -88,16 +76,14 @@
           body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(custom)}`
         });
 
-        if (!res.ok) {
-          const msg = await res.text();
-          throw new Error(msg || 'Помилка запиту');
-        }
-
+        if (!res.ok) throw new Error('Помилка створення посилання');
         const data = await res.json();
-        const base = location.origin;
+        const fullUrl = `${window.location.origin}/${data.short}`;
+        const statsUrl = `${window.location.origin}/${data.short}/stats`;
+
         result.innerHTML = `
-          <a href="${base}/${data.short}" target="_blank">${base}/${data.short}</a><br />
-          <a href="${base}/${data.short}/stats" target="_blank">📊 Переглянути статистику</a>
+          <p><a href="${fullUrl}" target="_blank">${fullUrl}</a></p>
+          <p><a href="${statsUrl}" target="_blank">📊 Переглянути статистику</a></p>
         `;
       } catch (err) {
         alert('Помилка: ' + err.message);
