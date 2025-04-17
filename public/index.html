@@ -2,101 +2,74 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Скоротити посилання</title>
+  <title>Статистика переходів</title>
   <style>
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: radial-gradient(circle at top left, #1f1f1f, #000);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .container {
-      background: #1c1c1c;
+      background: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
       padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 0 20px rgba(255, 208, 87, 0.2);
-      max-width: 460px;
-      width: 100%;
     }
     h1 {
-      text-align: center;
       color: #FFD057;
-      margin-bottom: 30px;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 12px 14px;
-      margin: 10px 0;
-      background: #2a2a2a;
-      color: #fff;
-      border: 1px solid #444;
-      border-radius: 8px;
-      transition: 0.3s;
-    }
-    input[type="text"]:focus {
-      outline: none;
-      border-color: #FFD057;
-      box-shadow: 0 0 5px #FFD057;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      background: #FFD057;
-      color: #000;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #e6bb45;
-    }
-    #short-url {
-      margin-top: 20px;
-      background: #2a2a2a;
-      color: #aaa;
       text-align: center;
-      font-size: 0.95em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #1c1c1c;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+    th {
+      background: #FFD057;
+      color: #111;
+    }
+    tr:hover {
+      background: #222;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Скоротіть посилання</h1>
-    <form id="shortener-form">
-      <input type="text" id="url" placeholder="Вставте ваше посилання" required>
-      <input type="text" id="custom" placeholder="Бажаний код (необов’язково)">
-      <button type="submit">Скоротити</button>
-    </form>
-    <input type="text" id="short-url" placeholder="Тут з'явиться коротке посилання" readonly>
-  </div>
+  <h1>Детальна статистика переходів</h1>
+  <table id="stats-table">
+    <thead>
+      <tr>
+        <th>IP</th>
+        <th>Країна</th>
+        <th>Місто</th>
+        <th>Дата</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
-    document.getElementById('shortener-form').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      const url = document.getElementById('url').value;
-      const custom = document.getElementById('custom').value;
-      const response = await fetch('/shorten', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `url=${encodeURIComponent(url)}&custom=${encodeURIComponent(custom)}`
+    const code = window.location.pathname.split("/")[1];
+    fetch(`/${code}/stats`)
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.querySelector("#stats-table tbody");
+        data.details.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row.ip}</td>
+            <td>${row.country}</td>
+            <td>${row.city}</td>
+            <td>${new Date(row.date).toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(() => {
+        alert("Помилка завантаження статистики");
       });
-
-      if (response.ok) {
-        const shortUrl = await response.text();
-        document.getElementById('short-url').value = shortUrl;
-      } else {
-        const errorText = await response.text();
-        alert('Помилка: ' + errorText);
-      }
-    });
   </script>
 </body>
 </html>
